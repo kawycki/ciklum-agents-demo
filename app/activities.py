@@ -29,15 +29,13 @@ async def plan_activity(run_input: RunInput) -> Plan:
 async def code_activity(run_input: RunInput, plan: Plan) -> CodeArtifact:
     with tracing.span(run_input.run_id, "coder", input={"plan_steps": plan.steps}, metadata=_attempt_meta()) as sp:
         artifact = agents.code(plan, run_input)
-        sp.output = {"entrypoint": artifact.entrypoint, "language": artifact.language,
-                     "code_preview": artifact.code[:500]}
+        sp.output = {"code_preview": artifact.code[:500]}
         return artifact
 
 
 @activity.defn(name="execute")
 async def execute_activity(run_id: str, artifact: CodeArtifact) -> SandboxResult:
-    span_input = {"language": artifact.language, "code_preview": artifact.code[:500],
-                  "input": artifact.input}
+    span_input = {"code_preview": artifact.code[:500], "input": artifact.input}
     with tracing.span(run_id, "executor (firecracker microVM)", input=span_input, metadata=_attempt_meta()) as sp:
         result = await sandbox.run_payload(artifact.code, artifact.input)
         sp.output = {

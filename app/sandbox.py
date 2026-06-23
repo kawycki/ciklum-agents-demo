@@ -118,13 +118,6 @@ async def _build_job_disk(workdir: Path, code: str, input_obj: dict[str, Any], g
     (job_dir / "payload.py").write_text(code, encoding="utf-8")
     (job_dir / "input.json").write_text(json.dumps(input_obj), encoding="utf-8")
     (job_dir / "timeout").write_text(str(guest_timeout_s), encoding="utf-8")
-    # Host-controlled rlimits the guest runner applies to the untrusted payload.
-    (job_dir / "limits.json").write_text(json.dumps({
-        "cpu_s": config.SANDBOX_RLIMIT_CPU_S,
-        "as_mib": config.SANDBOX_RLIMIT_AS_MIB,
-        "fsize_mib": config.SANDBOX_RLIMIT_FSIZE_MIB,
-        "nproc": config.SANDBOX_RLIMIT_NPROC,
-    }), encoding="utf-8")
     img = workdir / "job.ext4"
     rc, out = await _run(["mke2fs", "-q", "-F", "-t", "ext4", "-d", str(job_dir), str(img), "16M"])
     if rc != 0:
@@ -225,10 +218,7 @@ async def run_payload(
     finally:
         if proc is not None and proc.returncode is None:
             _kill_group(proc)
-        if os.environ.get("FCJOB_KEEP"):
-            print(f"[sandbox] kept workdir: {workdir}")
-        else:
-            shutil.rmtree(workdir, ignore_errors=True)
+        shutil.rmtree(workdir, ignore_errors=True)
 
     parsed = _parse_result(console_text)
 

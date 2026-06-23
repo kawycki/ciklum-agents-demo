@@ -1,7 +1,7 @@
-"""Typed payloads exchanged between the workflow and its activities.
+"""Dataclass payloads passed between the workflow and its activities.
 
-These are plain dataclasses so Temporal's default JSON data converter can
-serialize them into and out of workflow history without extra config.
+Plain dataclasses so Temporal's default JSON converter serializes them into
+workflow history.
 """
 from __future__ import annotations
 
@@ -11,41 +11,29 @@ from typing import Any, Optional
 
 @dataclass
 class RunInput:
-    """Everything a single run is launched with."""
-
     run_id: str
     tenant_id: str
     task: str
-    code: str  # the untrusted Python the "coder" agent hands to the sandbox
+    code: str  # the untrusted Python handed to the sandbox
     input: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class Plan:
-    """Planner-agent output: how the run will be carried out."""
-
     objective: str
     steps: list[str]
-    language: str
-    notes: str = ""
 
 
 @dataclass
 class CodeArtifact:
-    """Coder-agent output: the concrete payload bound for the sandbox."""
-
-    entrypoint: str
     code: str
-    language: str
     input: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class SandboxResult:
-    """Raw outcome of executing the payload inside the Firecracker microVM."""
-
-    ok: bool  # did the payload run to completion (exit code captured)?
-    boot_ok: bool  # did the microVM boot and the guest runner report back?
+    ok: bool            # payload ran to completion (exit code captured)
+    boot_ok: bool       # microVM booted and the guest runner reported back
     exit_code: Optional[int]
     stdout: str
     stderr: str
@@ -57,19 +45,14 @@ class SandboxResult:
 
 @dataclass
 class Summary:
-    """Summarizer-agent output: the human-facing result of the run."""
-
     success: bool
     answer: str
     exit_code: Optional[int]
     duration_ms: int
-    notes: str = ""
 
 
 @dataclass
 class RunResult:
-    """Final value returned by the workflow."""
-
     run_id: str
     status: str  # "completed" | "failed"
     summary: Summary
