@@ -13,6 +13,10 @@ streams their status.
 
 2. FIRECRACKER_BIN in ('app/config.py') set to binary built in previous step
 
+3. Temporal binary. It can be installed with  ```brew install temporal ```
+
+4. UV Python package and project manager - https://docs.astral.sh/uv/
+
 ## The multi-agent pipeline
 
 A run flows through four agents, each a Temporal **activity**:
