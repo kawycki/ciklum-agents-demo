@@ -1,4 +1,4 @@
-# ciklum temporal demo
+# ciklum agents demo
 A demo service that runs a example **multi-agent system as a durable Temporal workflow**,
 where the one untrusted step — executing code — runs inside an
 **isolated Firecracker microVM with no host network access**. Each step emits a

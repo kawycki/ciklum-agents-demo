@@ -1,10 +1,4 @@
 """The durable, retryable, resumable multi-agent workflow.
-
-Temporal persists every activity result to the workflow's event history. If a
-worker crashes mid-run, another worker replays that history and resumes from
-the last completed step — the untrusted execution is never silently re-run
-unless its retry policy says so. The workflow body is deterministic; all I/O is
-delegated to activities.
 """
 from __future__ import annotations
 
@@ -23,8 +17,6 @@ with workflow.unsafe.imports_passed_through():
     )
     from app.dto import RunInput, RunResult
 
-# The executor activity must outlast the sandbox's own host timeout plus the
-# time to build the job disk and boot the microVM.
 _EXECUTE_TIMEOUT = timedelta(seconds=config.SANDBOX_TIMEOUT_S + 120)
 _SHORT = timedelta(seconds=30)
 

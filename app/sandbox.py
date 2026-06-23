@@ -1,20 +1,4 @@
 """Run an untrusted payload inside a single-use Firecracker microVM.
-
-Isolation properties enforced here:
-  * **No host network** — we never configure a network interface, so the guest
-    has no NIC and cannot reach the host or anything else.
-  * **Read-only shared rootfs** — the root drive is attached `is_read_only`, so
-    a malicious guest cannot tamper with the image other tenants reuse.
-  * **Single-use job disk** — the payload enters on a per-run ext4 disk
-    (also read-only to the guest) that is destroyed afterwards.
-  * **Hard timeout** — the whole VM (and its process group) is SIGKILLed past
-    the host wall-clock budget; an inner guest timeout bounds the payload too.
-  * Firecracker's built-in seccomp filter is on by default; the guest further
-    drops to an unprivileged user with rlimits (see the guest runner).
-
-The Firecracker REST API is driven over its unix socket with a tiny inline
-HTTP client so the module has no extra dependency and we get block-level
-control (read-only root) that `firectl` does not expose.
 """
 from __future__ import annotations
 
@@ -32,18 +16,15 @@ from typing import Any, Optional
 from app import config
 from app.dto import SandboxResult
 
-# Markers the in-guest runner wraps its JSON result with (kept in sync with
-# sandbox/guest_runner.py). Unique enough not to collide with kernel logs.
 RESULT_START = "---FCRUN-RESULT-START---"
 RESULT_END = "---FCRUN-RESULT-END---"
 
 
 class SandboxError(Exception):
-    """Infrastructure-level failure (treated as retryable by the activity)."""
-
+    """Infrastructure-level failure"""
 
 # --------------------------------------------------------------------------
-# Minimal async HTTP client over the Firecracker API unix socket.
+# Minimal async HTTP client over the Firecracker API.
 # --------------------------------------------------------------------------
 async def _api(sock: Path, method: str, path: str, body: Optional[dict[str, Any]] = None) -> None:
     reader, writer = await asyncio.open_unix_connection(path=str(sock))
@@ -59,8 +40,6 @@ async def _api(sock: Path, method: str, path: str, body: Optional[dict[str, Any]
     writer.write(("\r\n".join(head) + "\r\n\r\n").encode() + payload)
     await writer.drain()
 
-    # Read exactly one response (headers, then Content-Length bytes). Firecracker
-    # keeps the connection open, so reading until EOF would block forever.
     buf = b""
     while b"\r\n\r\n" not in buf:
         chunk = await reader.read(4096)
@@ -92,7 +71,7 @@ async def _api(sock: Path, method: str, path: str, body: Optional[dict[str, Any]
 
 
 async def _wait_for_socket(sock: Path, proc: asyncio.subprocess.Process) -> None:
-    for _ in range(200):  # up to ~4s
+    for _ in range(200):
         if sock.exists():
             return
         if proc.returncode is not None:
@@ -126,9 +105,6 @@ async def _build_job_disk(workdir: Path, code: str, input_obj: dict[str, Any], g
 
 
 def _parse_result(console: str) -> Optional[dict[str, Any]]:
-    # Kernel printk shares the serial console with the guest's stdout and can
-    # interleave mid-line. Strip "[   12.345678] ..." fragments so split markers
-    # and the (single-line) JSON result rejoin cleanly.
     console = re.sub(r"\[\s*\d+\.\d+\][^\n]*\n?", "", console)
     start = console.rfind(RESULT_START)
     end = console.rfind(RESULT_END)
@@ -167,8 +143,6 @@ async def run_payload(
         job_img = await _build_job_disk(workdir, code, input_obj, guest_timeout_s)
 
         console = open(console_path, "wb")
-        # Launch firecracker; the guest serial console (ttyS0) is wired to stdout.
-        # start_new_session=True puts it in its own process group for clean kill.
         proc = await asyncio.create_subprocess_exec(
             str(config.FIRECRACKER_BIN), "--api-sock", str(sock),
             stdout=console, stderr=asyncio.subprocess.STDOUT,
@@ -178,8 +152,6 @@ async def run_payload(
 
         await _wait_for_socket(sock, proc)
 
-        # reboot=k makes the guest reset via the i8042 controller, which
-        # Firecracker traps to exit cleanly -- so we do NOT disable i8042.
         boot_args = (
             "console=ttyS0 loglevel=2 reboot=k panic=1 pci=off nomodules "
             "random.trust_cpu=on root=/dev/vda ro init=/init"
@@ -199,7 +171,6 @@ async def run_payload(
             "drive_id": "job", "path_on_host": str(job_img),
             "is_root_device": False, "is_read_only": True,
         })
-        # No /network-interfaces is ever configured -> the guest has no NIC.
         await _api(sock, "PUT", "/actions", {"action_type": "InstanceStart"})
 
         try:
@@ -209,7 +180,6 @@ async def run_payload(
             _kill_group(proc)
             await proc.wait()
 
-        # Read the console BEFORE the finally clause removes the workdir.
         elapsed_ms = int((time.monotonic() - started) * 1000)
         console_text = (
             console_path.read_text(encoding="utf-8", errors="replace")
@@ -223,7 +193,6 @@ async def run_payload(
     parsed = _parse_result(console_text)
 
     if parsed is None and not host_timed_out:
-        # Booted but never reported a result: treat as a (retryable) infra fault.
         rc = proc.returncode if proc is not None else "n/a"
         tail = console_text[-1500:]
         raise SandboxError(
@@ -231,7 +200,7 @@ async def run_payload(
             f"firecracker_rc={rc} console_bytes={len(console_text)}\nconsole tail:\n{tail}"
         )
 
-    if parsed is None:  # host timeout killed it before it reported
+    if parsed is None:
         return SandboxResult(
             ok=False, boot_ok=True, exit_code=None, stdout="", stderr="",
             duration_ms=elapsed_ms, guest_timed_out=False, host_timed_out=True,

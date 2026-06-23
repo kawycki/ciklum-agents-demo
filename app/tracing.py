@@ -1,14 +1,4 @@
 """Langfuse-style structured tracing to a per-run JSONL sink.
-
-The event shape mirrors Langfuse's ingestion API (`trace-create`,
-`span-create`, `span-update`), so a sink file can be replayed into a real
-Langfuse instance with a thin shim. We write locally instead of POSTing so the
-service has no external dependency, but the data model is the same:
-
-  * one *trace* per run (its id is the run_id)
-  * one *span* observation per workflow step, carrying input/output/timing/status
-
-The same files are tailed by the API to stream status to clients.
 """
 from __future__ import annotations
 
@@ -57,9 +47,6 @@ def trace_create(
     metadata: Optional[dict[str, Any]] = None,
 ) -> None:
     """Create or upsert the run-level trace.
-
-    Re-emitting with the same id (run_id) and an `output`/`status` finalizes
-    the trace, exactly like Langfuse's last-write-wins trace upsert.
     """
     body: dict[str, Any] = {
         "id": run_id,
@@ -115,7 +102,7 @@ def span(
     handle = _Span()
     try:
         yield handle
-    except Exception as exc:  # record the failure, then re-raise for Temporal
+    except Exception as exc:
         _emit(
             run_id,
             {

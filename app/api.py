@@ -1,4 +1,4 @@
-"""Minimal API: initiate a run and stream its status.
+"""API: initiate a run and stream its status.
 
   POST /runs              -> start a durable run, returns its id
   GET  /runs/{id}/stream  -> Server-Sent-Events: per-step traces + status, then result
@@ -38,7 +38,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="agent-sandbox-service", lifespan=lifespan)
+app = FastAPI(title="ciklum temporal demo", lifespan=lifespan)
 
 
 def client() -> Client:

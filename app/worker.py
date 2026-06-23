@@ -1,7 +1,4 @@
 """Temporal worker: hosts the workflow and activities on the task queue.
-
-Run several of these for capacity/HA — Temporal load-balances tasks across
-them and a crash mid-run is recovered by whichever worker picks up the history.
 """
 from __future__ import annotations
 
@@ -20,10 +17,6 @@ from app.activities import (
 )
 from app.workflows import AgentRunWorkflow
 
-# These modules only run inside activities (or hold plain config) and use
-# host facilities the workflow sandbox would otherwise flag. Pass them through
-# so they are not re-imported in the sandbox; the workflow module itself stays
-# sandboxed for determinism checking.
 _PASSTHROUGH = (
     "app.config", "app.dto", "app.agents",
     "app.activities", "app.sandbox", "app.tracing",

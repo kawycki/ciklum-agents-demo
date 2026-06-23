@@ -1,7 +1,4 @@
 """Dataclass payloads passed between the workflow and its activities.
-
-Plain dataclasses so Temporal's default JSON converter serializes them into
-workflow history.
 """
 from __future__ import annotations
 
@@ -14,7 +11,7 @@ class RunInput:
     run_id: str
     tenant_id: str
     task: str
-    code: str  # the untrusted Python handed to the sandbox
+    code: str
     input: dict[str, Any] = field(default_factory=dict)
 
 
@@ -32,8 +29,8 @@ class CodeArtifact:
 
 @dataclass
 class SandboxResult:
-    ok: bool            # payload ran to completion (exit code captured)
-    boot_ok: bool       # microVM booted and the guest runner reported back
+    ok: bool
+    boot_ok: bool
     exit_code: Optional[int]
     stdout: str
     stderr: str

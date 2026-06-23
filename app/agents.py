@@ -1,7 +1,4 @@
 """The pipeline's agents: deterministic stand-ins for LLM-backed agents.
-
-The focus is the durable orchestration and the isolation of the untrusted
-step, not agent quality. Swapping in a real model touches only this file.
 """
 from __future__ import annotations
 
