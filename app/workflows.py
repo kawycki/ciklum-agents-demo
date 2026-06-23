@@ -78,6 +78,7 @@ class AgentRunWorkflow:
                 execute_activity,
                 args=[ri.run_id, artifact],
                 start_to_close_timeout=_EXECUTE_TIMEOUT,
+                heartbeat_timeout=timedelta(seconds=10),
                 retry_policy=_EXECUTE_RETRY,
             )
             self._end("executor")

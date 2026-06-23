@@ -12,7 +12,8 @@ cleanup() { kill "${pids[@]}" 2>/dev/null || true; }
 trap cleanup EXIT INT TERM
 
 echo ">> starting Temporal dev server (localhost:7233, UI on :8233)"
-temporal server start-dev --log-level error >temporal.log 2>&1 &
+# --db-filename persists workflow history to disk so it survives a server restart.
+temporal server start-dev --db-filename ./temporal.db --log-level error >temporal.log 2>&1 &
 pids+=($!)
 
 echo ">> waiting for Temporal to accept connections"
