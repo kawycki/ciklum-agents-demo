@@ -1,7 +1,7 @@
 [project]
-name = "agent-sandbox-service"
+name = "ciklum-agents-demo"
 version = "0.1.0"
-description = "Durable multi-agent runs on Temporal with a Firecracker-isolated execution step"
+description = "Durable multi-agent runs on Temporal with a Firecracker isolation"
 requires-python = ">=3.11"
 dependencies = [
     "temporalio>=1.7",
