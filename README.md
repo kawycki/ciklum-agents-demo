@@ -1,10 +1,17 @@
 # ciklum temporal demo
-
 A demo service that runs a example **multi-agent system as a durable Temporal workflow**,
 where the one untrusted step — executing code — runs inside an
 **isolated Firecracker microVM with no host network access**. Each step emits a
 **Langfuse-style structured trace**, and a minimal HTTP API starts runs and
 streams their status.
+
+**It has been run and tested in WSL environment**
+
+## Prerequisities
+
+1. Firecracker binary. It was build and setup according to the documentation - https://github.com/firecracker-microvm/firecracker#getting-started
+
+2. FIRECRACKER_BIN in ('app/config.py') set to binary built in previous step
 
 ## The multi-agent pipeline
 
