@@ -1,5 +1,5 @@
 [project]
-name = "ciklum-agents-demo"
+name = "agents-platform-demo"
 version = "0.1.0"
 description = "Durable multi-agent runs on Temporal with a Firecracker isolation"
 requires-python = ">=3.11"

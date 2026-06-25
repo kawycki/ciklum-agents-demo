@@ -38,7 +38,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="ciklum temporal demo", lifespan=lifespan)
+app = FastAPI(title="temporal demo", lifespan=lifespan)
 
 
 def client() -> Client:
